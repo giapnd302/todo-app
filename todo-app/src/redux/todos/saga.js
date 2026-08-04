@@ -1,13 +1,13 @@
-// src/redux/todos/saga.js
 import { call, put, takeLatest } from 'redux-saga/effects';
-import { fetchTodosApi, addTodoApi } from '../../api/todoService'; // import thêm addTodoApi
-// import thêm các action mới
+import { fetchTodosApi, addTodoApi, toggleTodoApi, deleteTodoApi } from '../../api/todoService'; 
 import { 
   fetchTodosRequest, fetchTodosSuccess, fetchTodosFailure,
-  addTodoRequest, addTodoSuccess, addTodoFailure 
+  addTodoRequest, addTodoSuccess, addTodoFailure,
+  toggleTodoRequest, toggleTodoSuccess, toggleTodoFailure,
+  deleteTodoRequest, deleteTodoSuccess, deleteTodoFailure
 } from './slice';
 
-// Worker cũ (Lấy danh sách)
+// Worker 1: Fetch
 function* fetchTodosWorker() {
   try {
     const data = yield call(fetchTodosApi); 
@@ -17,10 +17,9 @@ function* fetchTodosWorker() {
   }
 }
 
-// --- THÊM WORKER MỚI (Thêm Todo) ---
+// Worker 2: Add
 function* addTodoWorker(action) {
   try {
-    // action.payload chính là nội dung text truyền từ UI sang
     const newTodo = yield call(addTodoApi, action.payload); 
     yield put(addTodoSuccess(newTodo));
   } catch (error) {
@@ -28,10 +27,30 @@ function* addTodoWorker(action) {
   }
 }
 
-// Cập nhật Watcher
+// Worker 3: Toggle
+function* toggleTodoWorker(action) {
+  try {
+    const updatedTodo = yield call(toggleTodoApi, action.payload);
+    yield put(toggleTodoSuccess(updatedTodo));
+  } catch (error) {
+    yield put(toggleTodoFailure(error.message));
+  }
+}
+
+// Worker 4: Delete
+function* deleteTodoWorker(action) {
+  try {
+    const deletedId = yield call(deleteTodoApi, action.payload);
+    yield put(deleteTodoSuccess(deletedId));
+  } catch (error) {
+    yield put(deleteTodoFailure(error.message));
+  }
+}
+
+// Watcher: Lắng nghe UI
 export function* todosSaga() {
   yield takeLatest(fetchTodosRequest.type, fetchTodosWorker);
-  
-  // Lắng nghe thêm action addTodoRequest
   yield takeLatest(addTodoRequest.type, addTodoWorker); 
+  yield takeLatest(toggleTodoRequest.type, toggleTodoWorker);
+  yield takeLatest(deleteTodoRequest.type, deleteTodoWorker);
 }
